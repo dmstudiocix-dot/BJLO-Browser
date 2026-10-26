@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BJLO Browser</string>
+    <string name="address_hint">Ingresa tu código aquí</string>
+    <string name="menu_button_desc">Menú</string>
+
+    <string name="menu_dns">Filtro DNS…</string>
+    <string name="menu_adblock">Bloqueo de anuncios: %1$s</string>
+    <string name="menu_cursor">Modo cursor (control remoto): %1$s</string>
+    <string name="menu_desktop">Modo escritorio: %1$s</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_reload">Recargar</string>
+    <string name="menu_clear">Limpiar caché y cookies</string>
+    <string name="menu_about">Acerca de</string>
+    <string name="on">Sí</string>
+    <string name="off">No</string>
+    <string name="menu_title">BJLO Browser</string>
+
+    <string name="dns_title">Filtro DNS antipublicidad</string>
+    <string name="dns_applied">Filtro DNS: %1$s</string>
+    <string name="nextdns_title">NextDNS</string>
+    <string name="nextdns_msg">Escribe el ID de tu configuración de NextDNS (lo ves en my.nextdns.io, por ejemplo abc123).</string>
+    <string name="nextdns_hint">ID de configuración</string>
+
+    <string name="dlg_apk_title">Descargar APK</string>
+    <string name="dlg_apk_msg">Archivo: %1$s\nOrigen: %2$s\n\nSolo instala aplicaciones de fuentes en las que confíes.</string>
+    <string name="dlg_download">Descargar</string>
+    <string name="dlg_cancel">Cancelar</string>
+    <string name="dlg_close">Cerrar</string>
+    <string name="dlg_ok">Aceptar</string>
+    <string name="dlg_save">Guardar</string>
+    <string name="downloading">Descargando %1$s…</string>
+    <string name="download_failed">La descarga falló (código %1$d)</string>
+    <string name="download_no_storage">No hay almacenamiento disponible para descargar</string>
+    <string name="apk_invalid">El archivo descargado no es una APK válida</string>
+    <string name="perm_title">Permitir instalar apps</string>
+    <string name="perm_msg">Para instalar \"%1$s\" debes permitir que BJLO Browser instale aplicaciones. Se abrirá la configuración; activa la opción y vuelve a esta pantalla.</string>
+    <string name="perm_open">Abrir ajustes</string>
+    <string name="install_missing">No se encontró un instalador de paquetes en este dispositivo</string>
+
+    <string name="offline">Sin conexión a internet</string>
+    <string name="cache_cleared">Caché y cookies eliminadas</string>
+    <string name="about_msg">BJLO Browser %1$s\n\nEscribe un código numérico de AFTVnews, una dirección web o una búsqueda.\n\nControl remoto:\n• Flechas: mover el cursor\n• OK: clic\n• Cursor arriba del todo: ir a la barra\n• Menú (≡ o tecla Menú): opciones\n• Atrás: página anterior</string>
+    <string name="error_title">No se pudo cargar la página</string>
+</resources>

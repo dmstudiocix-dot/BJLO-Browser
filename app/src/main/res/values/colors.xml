@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bjlo_bg">#0A0A0C</color>
+    <color name="bjlo_surface">#121218</color>
+    <color name="bjlo_blue">#0071E3</color>
+    <color name="bjlo_blue_soft">#330071E3</color>
+    <color name="bjlo_blue_press">#660071E3</color>
+    <color name="bjlo_hint">#8A8F98</color>
+    <color name="ic_launcher_background">#FD5C01</color>
+</resources>

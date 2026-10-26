@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.BJLO" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/bjlo_bg</item>
+        <item name="android:statusBarColor">@color/bjlo_bg</item>
+        <item name="android:navigationBarColor">@color/bjlo_bg</item>
+        <item name="colorPrimary">@color/bjlo_blue</item>
+        <item name="colorPrimaryDark">@color/bjlo_bg</item>
+        <item name="colorAccent">@color/bjlo_blue</item>
+    </style>
+
+    <style name="BjloDialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="colorAccent">@color/bjlo_blue</item>
+    </style>
+</resources>
