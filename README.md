@@ -32,7 +32,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
   vacío → Google · solo números → `https://aftv.news/<código>` · `http(s)://…` → tal cual ·
   `localhost` / IP → `http://` · texto con punto y sin espacios → `https://dominio` · otra cosa → búsqueda en Google.
 - **Menú (≡ o tecla Menú):** archivos descargados, favoritos, agregar a favoritos, siguiente página, zoom, filtro DNS, bloqueo de anuncios, modo cursor, modo escritorio, instalación automática de APK, borrado automático de descargas, inicio, recargar, limpiar datos.
-- **Archivos descargados:** lista con tamaño, fecha, paquete y versión de cada APK, espacio usado/libre; seleccionar abre o instala, mantener pulsado elimina, "Eliminar todo" libera espacio de una vez. Las descargas antiguas se borran solas (7 días por defecto, configurable).
+- **Archivos descargados:** lista con tamaño, fecha, paquete y versión de cada APK, espacio usado/libre; seleccionar abre o instala, mantener pulsado elimina, "Eliminar todo" libera espacio de una vez. Las descargas antiguas se borran solas (30 días por defecto, configurable).
 - **Favoritos:** se guardan desde el menú; seleccionar abre, mantener pulsado permite renombrar o eliminar.
 - **Descargas:** el progreso se muestra en pantalla y se puede cancelar desde el menú.
 - **Control remoto:** flechas mueven el cursor, OK hace clic, el cursor al borde superior salta a la barra,

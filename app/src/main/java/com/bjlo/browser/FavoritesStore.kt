@@ -53,9 +53,8 @@ class FavoritesStore(context: Context) {
     }
 
     private fun defaults(): MutableList<Favorite> = mutableListOf(
-        Favorite("Google", "https://www.google.com"),
-        Favorite("YouTube", "https://www.youtube.com"),
-        Favorite("AFTVnews", "https://www.aftvnews.com")
+        Favorite("BJLO", "https://bjlo.netlify.app"),
+        Favorite("Google", "https://www.google.com")
     )
 
     companion object {

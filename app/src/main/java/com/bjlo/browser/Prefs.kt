@@ -41,7 +41,7 @@ class Prefs(context: Context, private val tvDefault: Boolean) {
         set(v) = sp.edit().putString(KEY_NEXTDNS_ID, v.trim()).apply()
 
     var adBlock: Boolean
-        get() = sp.getBoolean(KEY_ADBLOCK, true)
+        get() = sp.getBoolean(KEY_ADBLOCK, false)
         set(v) = sp.edit().putBoolean(KEY_ADBLOCK, v).apply()
 
     /** Cursor virtual controlado con el D-pad. Activado por defecto en TV. */
@@ -66,7 +66,7 @@ class Prefs(context: Context, private val tvDefault: Boolean) {
 
     /** Días tras los cuales se borran las descargas antiguas (0 = nunca). */
     var autoCleanDays: Int
-        get() = sp.getInt(KEY_CLEAN_DAYS, 7)
+        get() = sp.getInt(KEY_CLEAN_DAYS, 30)
         set(v) = sp.edit().putInt(KEY_CLEAN_DAYS, v).apply()
 
     companion object {
