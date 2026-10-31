@@ -80,6 +80,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
+            <!-- Estado de descarga (se muestra solo mientras hay una descarga en curso) -->
+            <TextView
+                android:id="@+id/downloadStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_address"
+                android:ellipsize="middle"
+                android:maxWidth="480dp"
+                android:paddingStart="20dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="10dp"
+                android:singleLine="true"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
             <ProgressBar
                 android:id="@+id/progress"
                 style="?android:attr/progressBarStyleHorizontal"

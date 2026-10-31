@@ -31,9 +31,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **Barra de direcciones** (acción Buscar / Enter):
   vacío → Google · solo números → `https://aftv.news/<código>` · `http(s)://…` → tal cual ·
   `localhost` / IP → `http://` · texto con punto y sin espacios → `https://dominio` · otra cosa → búsqueda en Google.
-- **Menú (≡ o tecla Menú):** filtro DNS, bloqueo de anuncios, modo cursor, modo escritorio, inicio, recargar, limpiar datos.
+- **Menú (≡ o tecla Menú):** archivos descargados, favoritos, agregar a favoritos, siguiente página, zoom, filtro DNS, bloqueo de anuncios, modo cursor, modo escritorio, instalación automática de APK, borrado automático de descargas, inicio, recargar, limpiar datos.
+- **Archivos descargados:** lista con tamaño, fecha, paquete y versión de cada APK, espacio usado/libre; seleccionar abre o instala, mantener pulsado elimina, "Eliminar todo" libera espacio de una vez. Las descargas antiguas se borran solas (7 días por defecto, configurable).
+- **Favoritos:** se guardan desde el menú; seleccionar abre, mantener pulsado permite renombrar o eliminar.
+- **Descargas:** el progreso se muestra en pantalla y se puede cancelar desde el menú.
 - **Control remoto:** flechas mueven el cursor, OK hace clic, el cursor al borde superior salta a la barra,
-  en los bordes inferior/laterales desplaza la página. Atrás vuelve a la página anterior.
+  en los bordes inferior/laterales desplaza la página. Atrás vuelve a la página anterior; Rebobinar/Avanzar = atrás/siguiente; R1/L1 del mando = zoom.
 - **APK:** al tocar un enlace `.apk` pide confirmación (muestra archivo y origen), descarga con DownloadManager
   y abre el instalador del sistema. La primera vez Android pedirá permitir "instalar apps desconocidas" para BJLO Browser.
 
@@ -56,12 +59,16 @@ app/src/main/java/com/bjlo/browser/
   CosmeticFilter.kt      CSS/JS de limpieza
   DownloadInstaller.kt   DownloadManager + FileProvider + instalador
   CursorOverlayView.kt   cursor virtual
+  FilesActivity.kt       pantalla de archivos descargados (ver, instalar, eliminar)
+  FavoritesActivity.kt   pantalla de favoritos
+  FavoritesStore.kt      persistencia de favoritos
+  FileOpener.kt          abrir/instalar archivos y permiso de instalación
   Prefs.kt               SharedPreferences "BJLO_PREFS" y proveedores DNS
 _icons_src/              SVG simplificados usados para generar los íconos
 ```
 
 ## Notas
 
-- Las descargas se guardan en la carpeta propia de la app (sin permiso de almacenamiento) y se borran tras 24 h.
+- Las descargas se guardan en la carpeta propia de la app (sin permiso de almacenamiento); se pueden gestionar desde Archivos descargados.
 - `usesCleartextTraffic=true` porque muchos enlaces de descarga siguen siendo `http://`.
 - Google Play restringe `REQUEST_INSTALL_PACKAGES`; este proyecto está pensado para distribución directa (sideload) o Amazon Appstore.

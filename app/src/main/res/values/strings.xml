@@ -40,6 +40,57 @@
 
     <string name="offline">Sin conexión a internet</string>
     <string name="cache_cleared">Caché y cookies eliminadas</string>
-    <string name="about_msg">BJLO Browser %1$s\n\nEscribe un código numérico de AFTVnews, una dirección web o una búsqueda.\n\nControl remoto:\n• Flechas: mover el cursor\n• OK: clic\n• Cursor arriba del todo: ir a la barra\n• Menú (≡ o tecla Menú): opciones\n• Atrás: página anterior</string>
+    <string name="about_msg">BJLO Browser %1$s\n\nEscribe un código numérico de AFTVnews, una dirección web o una búsqueda.\n\nControl remoto:\n• Flechas: mover el cursor\n• OK: clic\n• Cursor arriba del todo: ir a la barra\n• Menú (≡ o tecla Menú): opciones, archivos y favoritos\n• Atrás: página anterior\n• Rebobinar / Avanzar: atrás / siguiente\n• R1 / L1 (mando): zoom + / −</string>
     <string name="error_title">No se pudo cargar la página</string>
+
+    <!-- Menú ampliado -->
+    <string name="menu_files">Archivos descargados</string>
+    <string name="menu_favorites">Favoritos</string>
+    <string name="menu_add_favorite">Agregar página a favoritos</string>
+    <string name="menu_forward">Página siguiente</string>
+    <string name="menu_zoom_in">Acercar (zoom +)</string>
+    <string name="menu_zoom_out">Alejar (zoom −)</string>
+    <string name="menu_autoinstall">Instalar APK automáticamente: %1$s</string>
+    <string name="menu_autoclean">Borrar descargas antiguas: %1$s</string>
+    <string name="menu_cancel_downloads">Cancelar descarga en curso</string>
+    <string name="clean_never">nunca</string>
+    <string name="clean_days">tras %1$d días</string>
+    <string name="clean_title">Borrar descargas antiguas</string>
+    <string name="clean_opt_1">Tras 1 día</string>
+    <string name="clean_opt_7">Tras 7 días</string>
+    <string name="clean_opt_30">Tras 30 días</string>
+    <string name="clean_opt_0">Nunca</string>
+    <string name="download_cancelled">Descarga cancelada</string>
+    <string name="download_progress">Descargando %1$s… %2$d%%</string>
+    <string name="download_progress_unknown">Descargando %1$s…</string>
+    <string name="download_done_hint">%1$s descargado. Búscalo en Archivos descargados.</string>
+
+    <!-- Archivos -->
+    <string name="files_title">Archivos descargados</string>
+    <string name="files_hint">Seleccionar: abrir o instalar · Mantener pulsado: eliminar</string>
+    <string name="files_empty">Aún no hay archivos descargados</string>
+    <string name="files_summary">%1$d archivos · %2$s usados · %3$s libres</string>
+    <string name="files_install">Instalar</string>
+    <string name="files_open">Abrir</string>
+    <string name="files_delete">Eliminar</string>
+    <string name="files_delete_all">Eliminar todo</string>
+    <string name="files_confirm_delete">¿Eliminar %1$s?</string>
+    <string name="files_confirm_all">Se eliminarán %1$d archivos y se liberarán %2$s.</string>
+    <string name="files_deleted">Archivo eliminado</string>
+    <string name="files_all_deleted">Archivos eliminados</string>
+    <string name="files_open_failed">No hay ninguna app para abrir este archivo</string>
+    <string name="files_apk_invalid">APK dañada o incompleta</string>
+
+    <!-- Favoritos -->
+    <string name="fav_title">Favoritos</string>
+    <string name="fav_hint">Seleccionar: abrir · Mantener pulsado: más opciones</string>
+    <string name="fav_empty">No tienes favoritos. Agrega uno desde el menú ≡.</string>
+    <string name="fav_open">Abrir</string>
+    <string name="fav_rename">Cambiar nombre</string>
+    <string name="fav_rename_title">Nombre del favorito</string>
+    <string name="fav_delete">Eliminar</string>
+    <string name="fav_deleted">Favorito eliminado</string>
+    <string name="fav_added">Agregado a favoritos</string>
+    <string name="fav_exists">Ya está en favoritos</string>
+    <string name="fav_nothing">No hay una página para guardar</string>
 </resources>

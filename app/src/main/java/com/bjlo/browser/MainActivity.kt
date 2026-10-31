@@ -11,6 +11,8 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Message
 import android.os.SystemClock
 import android.text.InputType
@@ -34,8 +36,10 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -52,7 +56,23 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cursor: CursorOverlayView
     private lateinit var fullscreenContainer: FrameLayout
     private lateinit var downloads: DownloadInstaller
+    private lateinit var favorites: FavoritesStore
+    private lateinit var downloadStatus: TextView
     private var dnsFilter: DnsFilter? = null
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val progressPoll = object : Runnable {
+        override fun run() {
+            updateDownloadStatus()
+            handler.postDelayed(this, 500)
+        }
+    }
+
+    private val favoritesLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+            val url = res.data?.getStringExtra(FavoritesActivity.EXTRA_URL)
+            if (res.resultCode == RESULT_OK && !url.isNullOrEmpty()) loadUrl(url)
+        }
 
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
@@ -99,7 +119,9 @@ class MainActivity : AppCompatActivity() {
         progress = findViewById(R.id.progress)
         cursor = findViewById(R.id.cursor)
         fullscreenContainer = findViewById(R.id.fullscreen)
-        downloads = DownloadInstaller(this)
+        downloadStatus = findViewById(R.id.downloadStatus)
+        downloads = DownloadInstaller(this, prefs)
+        favorites = FavoritesStore(this)
 
         rebuildDnsFilter()
         setupWebView()
@@ -131,9 +153,12 @@ class MainActivity : AppCompatActivity() {
         webView.onResume()
         downloads.onResume()
         refreshCursor()
+        handler.removeCallbacks(progressPoll)
+        handler.post(progressPoll)
     }
 
     override fun onPause() {
+        handler.removeCallbacks(progressPoll)
         webView.onPause()
         super.onPause()
     }
@@ -170,6 +195,7 @@ class MainActivity : AppCompatActivity() {
         s.displayZoomControls = false
         s.loadWithOverviewMode = true
         s.useWideViewPort = true
+        s.textZoom = prefs.textZoom
 
         // Seguridad
         s.allowFileAccess = false              // file:///android_asset y android_res siguen funcionando
@@ -382,42 +408,102 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMenu() {
         fun yn(b: Boolean) = getString(if (b) R.string.on else R.string.off)
-        val items = arrayOf(
-            getString(R.string.menu_dns),
-            getString(R.string.menu_adblock, yn(prefs.adBlock)),
-            getString(R.string.menu_cursor, yn(prefs.cursorMode)),
-            getString(R.string.menu_desktop, yn(prefs.desktopMode)),
-            getString(R.string.menu_home),
-            getString(R.string.menu_reload),
-            getString(R.string.menu_clear),
-            getString(R.string.menu_about)
-        )
+        val clean = if (prefs.autoCleanDays <= 0) getString(R.string.clean_never)
+        else getString(R.string.clean_days, prefs.autoCleanDays)
+
+        // Cada entrada lleva su propia acción, así el orden del menú se puede cambiar sin tocar índices.
+        val entries = ArrayList<Pair<String, () -> Unit>>()
+        fun add(label: String, action: () -> Unit) {
+            entries.add(Pair(label, action))
+        }
+        add(getString(R.string.menu_files)) { startActivity(Intent(this, FilesActivity::class.java)) }
+        add(getString(R.string.menu_favorites)) {
+            favoritesLauncher.launch(Intent(this, FavoritesActivity::class.java))
+        }
+        add(getString(R.string.menu_add_favorite)) { addCurrentToFavorites() }
+        if (downloads.hasActive()) {
+            add(getString(R.string.menu_cancel_downloads)) {
+                downloads.cancelAll()
+                updateDownloadStatus()
+                Toast.makeText(this, R.string.download_cancelled, Toast.LENGTH_SHORT).show()
+            }
+        }
+        add(getString(R.string.menu_forward)) { if (webView.canGoForward()) webView.goForward() }
+        add(getString(R.string.menu_zoom_in)) { changeZoom(+10) }
+        add(getString(R.string.menu_zoom_out)) { changeZoom(-10) }
+        add(getString(R.string.menu_dns)) { showDnsDialog() }
+        add(getString(R.string.menu_adblock, yn(prefs.adBlock))) {
+            prefs.adBlock = !prefs.adBlock
+            webView.reload()
+        }
+        add(getString(R.string.menu_cursor, yn(prefs.cursorMode))) {
+            prefs.cursorMode = !prefs.cursorMode
+            refreshCursor()
+        }
+        add(getString(R.string.menu_desktop, yn(prefs.desktopMode))) {
+            prefs.desktopMode = !prefs.desktopMode
+            applyUserAgent()
+            webView.reload()
+        }
+        add(getString(R.string.menu_autoinstall, yn(prefs.autoInstall))) {
+            prefs.autoInstall = !prefs.autoInstall
+        }
+        add(getString(R.string.menu_autoclean, clean)) { showAutoCleanDialog() }
+        add(getString(R.string.menu_home)) { webView.loadUrl(START_URL) }
+        add(getString(R.string.menu_reload)) { webView.reload() }
+        add(getString(R.string.menu_clear)) { clearBrowsingData() }
+        add(getString(R.string.menu_about)) { showAbout() }
+
         AlertDialog.Builder(this, R.style.BjloDialog)
             .setTitle(R.string.menu_title)
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> showDnsDialog()
-                    1 -> {
-                        prefs.adBlock = !prefs.adBlock
-                        webView.reload()
-                    }
-                    2 -> {
-                        prefs.cursorMode = !prefs.cursorMode
-                        refreshCursor()
-                    }
-                    3 -> {
-                        prefs.desktopMode = !prefs.desktopMode
-                        applyUserAgent()
-                        webView.reload()
-                    }
-                    4 -> webView.loadUrl(START_URL)
-                    5 -> webView.reload()
-                    6 -> clearBrowsingData()
-                    7 -> showAbout()
-                }
+            .setItems(entries.map { it.first }.toTypedArray()) { _, which -> entries[which].second() }
+            .setNegativeButton(R.string.dlg_close, null)
+            .show()
+    }
+
+    private fun showAutoCleanDialog() {
+        val labels = arrayOf(
+            getString(R.string.clean_opt_1), getString(R.string.clean_opt_7),
+            getString(R.string.clean_opt_30), getString(R.string.clean_opt_0)
+        )
+        val values = intArrayOf(1, 7, 30, 0)
+        AlertDialog.Builder(this, R.style.BjloDialog)
+            .setTitle(R.string.clean_title)
+            .setSingleChoiceItems(labels, values.indexOf(prefs.autoCleanDays).coerceAtLeast(0)) { d, which ->
+                prefs.autoCleanDays = values[which]
+                downloads.cleanOldFiles()
+                d.dismiss()
             }
             .setNegativeButton(R.string.dlg_close, null)
             .show()
+    }
+
+    private fun addCurrentToFavorites() {
+        val url = webView.url
+        if (url.isNullOrEmpty() || url.startsWith("file:///android_asset")) {
+            Toast.makeText(this, R.string.fav_nothing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val name = webView.title?.takeIf { it.isNotBlank() } ?: Uri.parse(url).host ?: url
+        val added = favorites.add(Favorite(name.take(60), url))
+        Toast.makeText(this, if (added) R.string.fav_added else R.string.fav_exists, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun changeZoom(delta: Int) {
+        prefs.textZoom += delta
+        webView.settings.textZoom = prefs.textZoom
+        Toast.makeText(this, "${prefs.textZoom}%", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateDownloadStatus() {
+        val p = downloads.progress()
+        if (p == null) {
+            downloadStatus.visibility = View.GONE
+            return
+        }
+        downloadStatus.text = if (p.percent >= 0) getString(R.string.download_progress, p.name, p.percent)
+        else getString(R.string.download_progress_unknown, p.name)
+        downloadStatus.visibility = View.VISIBLE
     }
 
     private fun showDnsDialog() {
@@ -502,6 +588,16 @@ class MainActivity : AppCompatActivity() {
         if (event.keyCode == KeyEvent.KEYCODE_MENU) {
             if (event.action == KeyEvent.ACTION_UP) showMenu()
             return true
+        }
+        // Atajos del control remoto / mando (como en Downloader): rebobinar = atrás, avanzar = siguiente,
+        // R1 = zoom +, L1 = zoom −. Solo cuando no se está escribiendo en la barra.
+        if (event.action == KeyEvent.ACTION_UP && currentFocus !is EditText) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_MEDIA_REWIND -> { if (webView.canGoBack()) webView.goBack(); return true }
+                KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> { if (webView.canGoForward()) webView.goForward(); return true }
+                KeyEvent.KEYCODE_BUTTON_R1 -> { changeZoom(+10); return true }
+                KeyEvent.KEYCODE_BUTTON_L1 -> { changeZoom(-10); return true }
+            }
         }
         if (cursorActive() && handleCursorKey(event)) return true
         return super.dispatchKeyEvent(event)

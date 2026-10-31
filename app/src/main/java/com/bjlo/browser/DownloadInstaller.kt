@@ -1,19 +1,13 @@
 package com.bjlo.browser
 
 import android.app.DownloadManager
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
-import android.provider.Settings
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import java.io.File
 
@@ -22,12 +16,21 @@ import java.io.File
  *
  * Los archivos se guardan en la carpeta propia de la app (Android/data/<paquete>/files/Download),
  * así no se necesita permiso de almacenamiento y se borran al desinstalar.
+ * La pantalla "Archivos" permite verlos y eliminarlos.
  */
-class DownloadInstaller(private val activity: AppCompatActivity) {
+class DownloadInstaller(
+    private val activity: AppCompatActivity,
+    private val prefs: Prefs
+) {
+
+    private class Pending(val name: String, val apk: Boolean)
+
+    /** Estado para la barra de progreso (percent = -1 si el tamaño es desconocido). */
+    class Progress(val name: String, val percent: Int)
 
     private val dm = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    private val apkIds = HashSet<Long>()
-    private val completedInBackground = ArrayList<Long>()
+    private val pending = LinkedHashMap<Long, Pending>()
+    private val finishedInBackground = ArrayList<Pair<Long, Pending>>()
     private var waitingForPermission: File? = null
 
     init {
@@ -35,7 +38,7 @@ class DownloadInstaller(private val activity: AppCompatActivity) {
     }
 
     fun isApk(url: String, mime: String?, contentDisposition: String?): Boolean {
-        if (mime?.lowercase() == APK_MIME) return true
+        if (mime?.lowercase() == FileOpener.APK_MIME) return true
         val guessed = URLUtil.guessFileName(url, contentDisposition, mime).lowercase()
         if (guessed.endsWith(".apk")) return true
         return Uri.parse(url).path.orEmpty().lowercase().endsWith(".apk")
@@ -69,7 +72,7 @@ class DownloadInstaller(private val activity: AppCompatActivity) {
 
         return try {
             val id = dm.enqueue(request)
-            if (apk) apkIds.add(id)
+            pending[id] = Pending(name, apk)
             true
         } catch (e: Exception) {
             toast(activity.getString(R.string.download_failed, -1))
@@ -77,32 +80,63 @@ class DownloadInstaller(private val activity: AppCompatActivity) {
         }
     }
 
-    /** Llamado por el BroadcastReceiver de ACTION_DOWNLOAD_COMPLETE. */
+    fun hasActive(): Boolean = pending.isNotEmpty()
+
+    fun cancelAll() {
+        pending.keys.toList().forEach { dm.remove(it) }
+        pending.clear()
+    }
+
+    /** Progreso de la descarga en curso, o null si no hay ninguna. Se consulta cada ~500 ms desde la pantalla. */
+    fun progress(): Progress? {
+        val id = pending.keys.firstOrNull() ?: return null
+        val p = pending[id] ?: return null
+        var status = -1
+        var done = 0L
+        var total = -1L
+        dm.query(DownloadManager.Query().setFilterById(id)).use { c ->
+            if (!c.moveToFirst()) {
+                pending.remove(id)
+                return null
+            }
+            status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            done = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+            total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+        }
+        if (status == DownloadManager.STATUS_SUCCESSFUL || status == DownloadManager.STATUS_FAILED) {
+            onDownloadComplete(id) // red de seguridad por si el broadcast no llegó
+            return null
+        }
+        val percent = if (total > 0) ((done * 100) / total).toInt().coerceIn(0, 100) else -1
+        return Progress(p.name, percent)
+    }
+
+    /** Llamado por el BroadcastReceiver de ACTION_DOWNLOAD_COMPLETE (o por la red de seguridad de progress()). */
     fun onDownloadComplete(id: Long) {
-        if (id !in apkIds) return
-        if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-            handleFinished(id)
+        val p = pending.remove(id) ?: return
+        val resumed = activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+        if (p.apk && prefs.autoInstall && !resumed) {
+            finishedInBackground.add(id to p) // Android 10+ no permite abrir pantallas desde segundo plano
         } else {
-            completedInBackground.add(id) // Android 10+ no permite abrir pantallas desde segundo plano
+            handleFinished(id, p)
         }
     }
 
     /** Llamar desde onResume: procesa descargas terminadas en segundo plano y reintenta tras conceder el permiso. */
     fun onResume() {
-        if (completedInBackground.isNotEmpty()) {
-            val ids = ArrayList(completedInBackground)
-            completedInBackground.clear()
-            ids.forEach { handleFinished(it) }
+        if (finishedInBackground.isNotEmpty()) {
+            val items = ArrayList(finishedInBackground)
+            finishedInBackground.clear()
+            items.forEach { handleFinished(it.first, it.second) }
         }
         val waiting = waitingForPermission
-        if (waiting != null && canInstall()) {
+        if (waiting != null && FileOpener.canInstall(activity)) {
             waitingForPermission = null
             launchInstall(waiting)
         }
     }
 
-    private fun handleFinished(id: Long) {
-        apkIds.remove(id)
+    private fun handleFinished(id: Long, p: Pending) {
         var status = -1
         var reason = 0
         var localUri: String? = null
@@ -117,6 +151,11 @@ class DownloadInstaller(private val activity: AppCompatActivity) {
             toast(activity.getString(R.string.download_failed, reason))
             return
         }
+        if (!p.apk || !prefs.autoInstall) {
+            toast(activity.getString(R.string.download_done_hint, p.name))
+            return
+        }
+
         val path = localUri?.let { Uri.parse(it).path } ?: return
         val file = File(path)
 
@@ -127,69 +166,28 @@ class DownloadInstaller(private val activity: AppCompatActivity) {
             toast(activity.getString(R.string.apk_invalid))
             return
         }
-        if (canInstall()) {
+        if (FileOpener.canInstall(activity)) {
             launchInstall(file)
         } else {
             waitingForPermission = file
-            askInstallPermission(info.packageName ?: file.name)
-        }
-    }
-
-    private fun canInstall(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity.packageManager.canRequestPackageInstalls()
-
-    private fun askInstallPermission(label: String) {
-        AlertDialog.Builder(activity, R.style.BjloDialog)
-            .setTitle(R.string.perm_title)
-            .setMessage(activity.getString(R.string.perm_msg, label))
-            .setPositiveButton(R.string.perm_open) { _, _ -> openUnknownSourcesSettings() }
-            .setNegativeButton(R.string.dlg_cancel) { _, _ -> waitingForPermission = null }
-            .show()
-    }
-
-    private fun openUnknownSourcesSettings() {
-        val specific = Intent(
-            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-            Uri.parse("package:${activity.packageName}")
-        )
-        try {
-            activity.startActivity(specific)
-        } catch (e: ActivityNotFoundException) {
-            // Algunos TV Box no incluyen esta pantalla: caemos a los ajustes de seguridad.
-            try {
-                activity.startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
-            } catch (e2: ActivityNotFoundException) {
-                activity.startActivity(Intent(Settings.ACTION_SETTINGS))
+            FileOpener.askInstallPermission(activity, info.packageName ?: file.name) {
+                waitingForPermission = null
             }
         }
     }
 
     private fun launchInstall(file: File) {
-        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", file)
-        } else {
-            Uri.fromFile(file) // Android 5/6: el instalador no admite content://
-        }
-        val intent = Intent(Intent.ACTION_VIEW)
-            .setDataAndType(uri, APK_MIME)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
-            activity.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            toast(activity.getString(R.string.install_missing))
-        }
+        if (!FileOpener.launch(activity, file)) toast(activity.getString(R.string.install_missing))
     }
 
-    /** Borra descargas con más de 24 h para no acumular APKs en equipos con poco espacio. */
-    private fun cleanOldFiles() {
+    /** Borra descargas más antiguas que el límite elegido en Ajustes (0 = nunca). */
+    fun cleanOldFiles() {
+        val days = prefs.autoCleanDays
+        if (days <= 0) return
         val dir = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return
-        val limit = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        val limit = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000
         dir.listFiles()?.forEach { if (it.isFile && it.lastModified() < limit) it.delete() }
     }
 
     private fun toast(msg: String) = Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
-
-    companion object {
-        const val APK_MIME = "application/vnd.android.package-archive"
-    }
 }

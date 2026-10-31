@@ -45,6 +45,16 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".FilesActivity"
+            android:exported="false"
+            android:label="@string/files_title" />
+
+        <activity
+            android:name=".FavoritesActivity"
+            android:exported="false"
+            android:label="@string/fav_title" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
